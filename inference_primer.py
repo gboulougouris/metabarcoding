@@ -241,6 +241,7 @@ class mystatclass() :
                     print (" Did not READ  number of Mosquito  Can be used to predict ")
                     N_mosq =[]
                     F_reads=[]
+                    self.Pred[iexp]=True
                     self.N_mosq_all[iexp]={}
                     F_reads_all[iexp]={}
                     for i in range(nd1): 
