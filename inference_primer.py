@@ -6,8 +6,21 @@ from tkinter import messagebox
 import numpy as np
 # import scipy.linalg as la
 import itertools as itrt
+import pandas as pd
+
 Nsizeforfiting=100.
- 
+selectedexp="64" 
+automate =False
+xlfilename='C:/Users/gboul/pythonProjects/statist/V_2_28S seq all POOLs_edited_no_plummbeus_b_33.xlsx'
+selprimer="primer3"
+def add_sheet_to_excel(observed, expected, p_value, file_path, sheet_name):
+    # Create a DataFrame with the observations, expectations, and p-value
+    data = {'Observed': observed, 'Expected': expected, 'P-Value': p_value}
+    df = pd.DataFrame(data)
+
+    # Write the DataFrame to the Excel file as a new sheet
+    with pd.ExcelWriter(file_path, mode='a', engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
 class mystatclass() :
     def __init__(self,sign_level=0.05,onetail=True):
         self.allexp=[]
@@ -172,6 +185,10 @@ class mystatclass() :
             for ih in self.EHead[iexp] :
                 Dread[ih]=self.xlfile[iexp][ih].tolist()
 #            self.Dread_all[iexp]=Dread['PRIMNAME']
+            if automate :
+                if iexp == selectedexp :
+                    Dread["#COPIES"]=Dread["COPIES"]
+                    del Dread["COPIES"]
             prim_types={}
             global selectid
             global ref_r  # starting from 1
@@ -190,6 +207,7 @@ class mystatclass() :
 
             nd1 = len(Dread['PRIMID'])
             nd2 = len(Dread['READS'])
+
             if 'COPIES' in Dread.keys() :
                 nd3 = len(Dread['COPIES'])
             else :
@@ -441,7 +459,10 @@ class MyTKwindows():
             self.mystat.allexp.append(Ndic[ipri]) 
             self.mystat.allobs.append(primedic[ipri])
         if len(list(Ndic.keys())) >0 and min(exp)>0  :    
-            pvalue,chisq,sumerror,N= self.error(obs,exp) 
+            pvalue,chisq,sumerror,N= self.error(obs,exp)
+            if automate :
+                if iexp == selectedexp :
+                   add_sheet_to_excel(obs,exp,pvalue,"excelfileout.xlsx",selectedexp+selprimer)
             if predict or self.chb2.get() : 
 
                 ill+=1
@@ -540,7 +561,10 @@ class MyTKwindows():
             return False ,False ,False ,False 
 
     def WreadListfromExcel(self):
-        self.xlfilename= filedialog.askopenfilename()
+        if automate :
+            self.xlfilename= xlfilename
+        else :
+            self.xlfilename= filedialog.askopenfilename()
         self.col_listALL=self.mystat.readxlfileInf(self.xlfilename)
         global RExfilename
         RExfilename=self.xlfilename
@@ -617,6 +641,7 @@ class MyTKwindows():
             self.bButtonexcelInf.config(state=DISABLED)
             self.bButtonexcelInf2.config(state=NORMAL)
             self.mystat.primer_list=self.primer_listALL[selectionB[0]]
+            if automate : self.WinferenceEst()
 
             
 
@@ -668,6 +693,10 @@ class MyTKwindows():
 
         self.canv.create_window(150, 75, window=self.bButtonexcelInf)
         self.canv.create_window(150, 110, window=self.bButtonexcelInf2)
+
+        if automate :
+            self.Winference()
+            self.Wsetselectall()
 
     def Wsetselectall(self):
         self.listbox.select_set(0, tk.END)
