@@ -4,10 +4,10 @@ import tkinter as tk
 from tkinter import filedialog, MULTIPLE,NORMAL,DISABLED
 from tkinter import messagebox
 import numpy as np
-import scipy.linalg as la
-from itertools import product    
-
-
+# import scipy.linalg as la
+import itertools as itrt
+Nsizeforfiting=100.
+ 
 class mystatclass() :
     def __init__(self,sign_level=0.05,onetail=True):
         self.allexp=[]
@@ -47,7 +47,7 @@ class mystatclass() :
         for ip in self.N_mosq_all[ic].keys():
             Nsize+=self.N_mosq_all[ic][ip]
         if Nsize < 1 :
-            Nsize=100.
+            Nsize=Nsizeforfiting
         R = self.R_reads_all[ic]
         primers= list(R.keys())
         F={}
@@ -103,7 +103,7 @@ class mystatclass() :
     def combsolutions(self,inres,N,Nrange):
         N=int(round(N))
         groups=len(inres)
-        allcomb= [ele for ele in product(range(0, Nrange + 1), repeat = groups)]
+        allcomb= [ele for ele in itrt.product(range(0, Nrange + 1), repeat = groups)]
         alllist=[]
         for icomn in allcomb :
             if sum(icomn) ==N :
@@ -291,9 +291,9 @@ class mystatclass() :
          u,s,vh=np.linalg.svd(A, full_matrices=True)
          return u,s,vh
 
-    def eigenv(self,A):
-        eigvals, eigvecs= la.eig(A)	
-        return eigvals, eigvecs 
+    # def eigenv(self,A):
+    #     eigvals, eigvecs= la.eig(A)	
+    #     return eigvals, eigvecs 
 
     def avfromdic(self,dic,item):
         templist = []
@@ -395,7 +395,8 @@ class MyTKwindows():
         self.root.clipboard_append(val)
 
     def newwidnow1 (self,iexp,primedic,Ndic,predict=True):  
-        neww1 = tk.Toplevel(self.root)
+        if predict or self.chb2.get() : 
+            neww1 = tk.Toplevel(self.root)
         table ={}
         iil = -1
         for il in list(Ndic.keys()):
@@ -403,32 +404,33 @@ class MyTKwindows():
             leb1 = 'rec'+str(iil)
             table[leb1]={'col1':il,'col2':primedic[il],'col2':Ndic[il],'lebel':leb1}
         # js_table=json.dumps(table)
-        mylebel = tk.Label(neww1,text = "Experement :"+iexp)
-        scrollbar = tk.Scrollbar(neww1, orient="vertical")   
+        if predict or self.chb2.get() : 
+            mylebel = tk.Label(neww1,text = "Experement :"+iexp)
+            scrollbar = tk.Scrollbar(neww1, orient="vertical")   
 #        mylistbox2 = tk.Listbox(neww1,width=100, height=30,yscrollcommand=scrollbar.set )
-        mylistbox2 = tk.Text(neww1,width=100, height=30,yscrollcommand=scrollbar.set )
-        scrollbar.config(command=mylistbox2.yview)
-        scrollbar.pack(side="right", fill="y")
-        mylistbox2.bind("<Button-1>", self.copyclip) 
+            mylistbox2 = tk.Text(neww1,width=100, height=30,yscrollcommand=scrollbar.set )
+            scrollbar.config(command=mylistbox2.yview)
+            scrollbar.pack(side="right", fill="y")
+            mylistbox2.bind("<Button-1>", self.copyclip) 
         
 
-        ill= -1
-        for il in list(primedic.keys()) :
-            ill+=1
-            if len(list(Ndic.keys())) >0 :
-#                mylistbox2.insert(ill,str(il)+",  pred :"+ str(primedic[il]) + " ,  used :"+str(Ndic[il])) 
-                mylistbox2.insert(tk.END,str(il)+",  pred :"+ str(primedic[il]) + " ,  used :"+str(Ndic[il])+" \n") 
+            ill= -1
+            for il in list(primedic.keys()) :
+                ill+=1
+                if len(list(Ndic.keys())) >0 :
+    #                mylistbox2.insert(ill,str(il)+",  pred :"+ str(primedic[il]) + " ,  used :"+str(Ndic[il])) 
+                    mylistbox2.insert(tk.END,str(il)+",  pred :"+ str(primedic[il]) + " ,  used :"+str(Ndic[il])+" \n") 
 
-            else :
-#                mylistbox2.insert(ill,str(il)+",  pred :"+ str(primedic[il]) ) 
-                mylistbox2.insert(tk.END,str(il)+",  pred :"+ str(primedic[il])+" \n" ) 
+                else :
+    #                mylistbox2.insert(ill,str(il)+",  pred :"+ str(primedic[il]) ) 
+                    mylistbox2.insert(tk.END,str(il)+",  pred :"+ str(primedic[il])+" \n" ) 
 
 # error analisis
         obs=[]
         exp=[]
         for ipri in Ndic.keys():
-            exp.append(Ndic[ipri]) 
-            obs.append(primedic[ipri])
+            obs.append(Ndic[ipri]) 
+            exp.append(primedic[ipri])
             if predict :
                 self.mystat.allexpP.append(Ndic[ipri]) 
                 self.mystat.allobsP.append(primedic[ipri])
@@ -438,17 +440,20 @@ class MyTKwindows():
 
             self.mystat.allexp.append(Ndic[ipri]) 
             self.mystat.allobs.append(primedic[ipri])
-        if len(list(Ndic.keys())) >0 :    
+        if len(list(Ndic.keys())) >0 and min(exp)>0  :    
             pvalue,chisq,sumerror,N= self.error(obs,exp) 
-            ill+=1
-            if predict :
-                mylistbox2.insert(tk.END,"Predicted : p value :"+ str(pvalue)+" χ2 value :"+ str(chisq) +" \n") 
+            if predict or self.chb2.get() : 
 
-            else :
-                mylistbox2.insert(tk.END,"Used in the Fit  : p value :"+ str(pvalue)+" χ2 value :"+ str(chisq) +" \n") 
+                ill+=1
+                if predict or self.chb2.get() :             
+                    if predict :
+                        mylistbox2.insert(tk.END,"Predicted : p value :"+ str(pvalue)+" χ2 value :"+ str(chisq) +" \n") 
 
-        mylebel.pack(side="top")
-        mylistbox2.pack(side="left",fill="both", expand=True)
+                    else :
+                        mylistbox2.insert(tk.END,"Used in the Fit  : p value :"+ str(pvalue)+" χ2 value :"+ str(chisq) +" \n") 
+        if predict or self.chb2.get() : 
+            mylebel.pack(side="top")
+            mylistbox2.pack(side="left",fill="both", expand=True)
         
 
 
@@ -461,6 +466,9 @@ class MyTKwindows():
 
     def Wsetavertype(self):
         self.mystat.simpleaverage=self.chb1.get()
+
+    def Wsetshowall(self):    
+        self.mystat.showallres=self.chb2.get()
 
     def WsetapprInt(self):
         self.mystat.apprInt=self.apprInt.get()
@@ -487,20 +495,27 @@ class MyTKwindows():
             if self.apprInt.get() :
                 self.newwidnow1(ic,resInt,Nres,predict=self.mystat.Pred[ic])
             else :
-                self.newwidnow1(ic,res,Nres,predict=self.mystat.Pred[ic])
-
-        pval,chsq,sumerror,N=self.error(self.mystat.allobs,self.mystat.allexp)
-        mess= "Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))+"\n"
-        print("Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))) 
-
-        pval,chsq,sumerror,N=self.error(self.mystat.allobsF,self.mystat.allexpF)
-        if N >0 :
-            mess+= "Used in Fit  : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))+"\n"
-            print("Used in Fit  : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))) 
-        pval,chsq,sumerror,N=self.error(self.mystat.allobsP,self.mystat.allexpP)
-        if N >0 :
-            mess+= " Predicted : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))+"\n"
-            print(" Predicted : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))) 
+                self.newwidnow1(ic,res,Nres,predict=self.mystat.Pred[ic])                    
+# obs and exp names are reverced 
+        if min(self.mystat.allobs) > 0 :
+            pval,chsq,sumerror,N=self.error(self.mystat.allexp,self.mystat.allobs)
+            mess= "Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))+"\n"
+            print("Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N))) 
+# obs and exp names are reverced 
+        if min(self.mystat.allobsF) > 0 :    
+            pval,chsq,sumerror,N1=self.error(self.mystat.allexpF,self.mystat.allobsF)
+            if N1 >0 :
+                mess+= "Used in Fit  : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N1))+"\n"
+                print("Used in Fit  : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N1))) 
+# obs and exp names are reverced
+        if self.mystat.allobsP!= []:
+            if min(self.mystat.allobsP) > 0 :    
+                pval,chsq,sumerror,N2=self.error(self.mystat.allexpP,self.mystat.allobsP)
+                if N2 >0 :
+                    mess+= " Predicted : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N2))+"\n"
+                    print(" Predicted : Pvalue : "+str(pval)+"<(obs-exp)2> : "+str(sumerror/float(N2))) 
+                    msg=tk.messagebox.showinfo(title=None, message=mess)
+        else :
             msg=tk.messagebox.showinfo(title=None, message=mess)
 
     def error(self,obs,exp,sumerror=0.,N=0):
@@ -518,9 +533,11 @@ class MyTKwindows():
             chi_squared_stat+=((obs[i]-exp[i])**2)/exp[i]
             sumerror+= (obs[i]-exp[i])**2
         N+=len(obs)
-        goofnessstat = stat.chisquare(f_obs= obs,f_exp= exp)
-        return goofnessstat[1],goofnessstat[0],sumerror,N
-
+        try : 
+            goofnessstat = stat.chisquare(f_obs= obs,f_exp= exp)
+            return goofnessstat[1],goofnessstat[0],sumerror,N
+        except :
+            return False ,False ,False ,False 
 
     def WreadListfromExcel(self):
         self.xlfilename= filedialog.askopenfilename()
@@ -629,6 +646,11 @@ class MyTKwindows():
         self.checkB = tk.Checkbutton(self.root,text="Don't use reference ratio ",onvalue=1,offvalue=0,variable=self.chb1,command=self.Wsetavertype)
         self.mystat.simpleaverage=self.chb1.get()
 
+        self.chb2=tk.IntVar()
+        self.checkB2 = tk.Checkbutton(self.root,text="Show all results ",onvalue=1,offvalue=0,variable=self.chb2,command=self.Wsetshowall)
+        self.mystat.showallres=self.chb2.get()
+
+
         self.apprInt=tk.IntVar()
         self.checkC = tk.Checkbutton(self.root,text="Approximate Integer solution ",onvalue=1,offvalue=0,variable=self.apprInt,command=self.WsetapprInt)
         self.mystat.apprInt=self.apprInt.get()
@@ -638,6 +660,7 @@ class MyTKwindows():
 
         self.lbl2.pack(side="right")
         self.checkB.pack()
+        self.checkB2.pack()
         self.checkC.pack()
         self.canv.pack()
         self.bButtonexcelInf = tk.Button(text="Read Primer Reads from Excel", command=self.Winference, bg='green', fg='white', font=('helvetica', 12, 'bold'),state=NORMAL)
@@ -667,5 +690,6 @@ class MyTKwindows():
 
 
 if __name__ == "__main__":
+    print ("In the case of fiting the Size of the population is assumed to be ",Nsizeforfiting,"it will affect only the case where integers are requested" )
     mytkwin =MyTKwindows()    
     mytkwin.looptkwindows()
